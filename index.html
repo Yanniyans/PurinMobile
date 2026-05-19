@@ -114,7 +114,7 @@
             try {
                 statusEl.innerText = "Scanning...";
                 bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'PurinMobile' }],
+                    acceptAllDevices: true,
                     optionalServices: [SERVICE_UUID]
                 });
 
