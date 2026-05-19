@@ -2,18 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Purin Controller</title>
     <style>
-        body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; touch-action: manipulation; }
         .dashboard { background: #1e293b; padding: 20px; border-radius: 12px; width: 100%; max-width: 350px; }
-        button { background: #38bdf8; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        button { background: #38bdf8; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; color: #000; }
+        button:active { opacity: 0.7; }
+        .dpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 15px; text-align: center; }
+        .btn-stop { background: #ef4444; color: white; }
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <button id="connectBtn">Connect Robot</button>
-        <p id="status">Status: Disconnected</p>
-        <div id="dataView" style="font-family: monospace; font-size: 12px; word-break: break-all;">No data yet...</div>
+        <button id="connectBtn" style="width: 100%; margin: 0 0 10px 0;">Connect Robot</button>
+        <p id="status" style="margin: 0 0 10px 0; font-size: 14px;">Status: Disconnected</p>
+        
+        <div id="dataView" style="font-family: monospace; font-size: 12px; background: #000; color: #32cd32; padding: 10px; min-height: 40px; word-break: break-all; border-radius: 6px;">Waiting for data...</div>
+
+        <div class="dpad">
+            <div></div>
+            <button onmousedown="sendCmd('W')" onmouseup="sendCmd('R')" ontouchstart="sendCmd('W')" ontouchend="sendCmd('R')">W</button>
+            <div></div>
+            <button onmousedown="sendCmd('A')" onmouseup="sendCmd('R')" ontouchstart="sendCmd('A')" ontouchend="sendCmd('R')">A</button>
+            <button class="btn-stop" onclick="sendCmd('R')">STOP</button>
+            <button onmousedown="sendCmd('D')" onmouseup="sendCmd('R')" ontouchstart="sendCmd('D')" ontouchend="sendCmd('R')">D</button>
+            <div></div>
+            <button onmousedown="sendCmd('S')" onmouseup="sendCmd('R')" ontouchstart="sendCmd('S')" ontouchend="sendCmd('R')">S</button>
+            <div></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+            <button onclick="sendCmd('L')" style="flex: 1;">Line Mode</button>
+            <button onclick="sendCmd('M')" style="flex: 1;">Wall Mode</button>
+        </div>
     </div>
 
     <script>
@@ -28,6 +50,12 @@
                 const device = await navigator.bluetooth.requestDevice({
                     filters: [{ services: [SERVICE_UUID] }]
                 });
+                
+                device.addEventListener('gattserverdisconnected', () => {
+                    document.getElementById('status').innerText = "Status: Disconnected";
+                    document.getElementById('status').style.color = "#ef4444";
+                });
+
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(SERVICE_UUID);
                 rxCharacteristic = await service.getCharacteristic(RX_UUID);
@@ -36,15 +64,23 @@
                 await txCharacteristic.startNotifications();
                 txCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
                     const value = new TextDecoder().decode(event.target.value);
+                    // Print exactly what the robot sends to the black box
                     document.getElementById('dataView').innerText = value;
-                    console.log("Raw Data Received:", value);
                 });
 
-                document.getElementById('status').innerText = "Status: Connected";
+                document.getElementById('status').innerText = "Status: Connected!";
+                document.getElementById('status').style.color = "#22c55e";
             } catch (error) {
                 document.getElementById('status').innerText = "Error: " + error.message;
+                document.getElementById('status').style.color = "#ef4444";
             }
         });
+
+        async function sendCmd(cmdChar) {
+            if (!rxCharacteristic) return;
+            const encoder = new TextEncoder();
+            await rxCharacteristic.writeValue(encoder.encode(cmdChar));
+        }
     </script>
 </body>
 </html>
