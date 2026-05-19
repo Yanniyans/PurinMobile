@@ -64,8 +64,11 @@
                 await txCharacteristic.startNotifications();
                 txCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
                     const value = new TextDecoder().decode(event.target.value);
-                    // Print exactly what the robot sends to the black box
-                    document.getElementById('dataView').innerText = value;
+                    const box = document.getElementById('dataView');
+                    box.innerText += value; // Added the + sign!
+                    
+                    // Auto-scroll to bottom so we can read it
+                    if (box.innerText.length > 500) { box.innerText = box.innerText.slice(-500); } 
                 });
 
                 document.getElementById('status').innerText = "Status: Connected!";
