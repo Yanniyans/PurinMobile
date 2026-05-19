@@ -73,10 +73,12 @@
 
                 document.getElementById('status').innerText = "Status: Connected!";
                 document.getElementById('status').style.color = "#22c55e";
-            } catch (error) {
-                document.getElementById('status').innerText = "Error: " + error.message;
-                document.getElementById('status').style.color = "#ef4444";
-            }
+                } catch (error) {
+                    // This forces Bluefy to print the full error object, whatever it is
+                    let realError = error.message || JSON.stringify(error) || error.toString() || "Unknown";
+                    document.getElementById('status').innerText = "Error: " + realError;
+                    document.getElementById('status').style.color = "#ef4444";
+                }
         });
 
         async function sendCmd(cmdChar) {
