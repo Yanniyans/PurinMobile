@@ -45,6 +45,7 @@
     <div class="dashboard">
         <div class="header-row">
             <h2>PURIN STATUS</h2>
+            <div id="debug-log" style="font-family: monospace; font-size: 10px; color: #38bdf8; background: #000; padding: 5px; margin-bottom: 10px; height: 50px; overflow-y: scroll;">Waiting for data...</div>
             <button id="connectBtn">Connect Robot</button>
         </div>
         <div style="text-align: right; margin-bottom: 10px;"><span id="status">Disconnected</span></div>
@@ -131,16 +132,22 @@
         }
 
         let incomingBuffer = "";
-        function handleTelemetry(event) {
-            const decoder = new TextDecoder('utf-8');
-            incomingBuffer += decoder.decode(event.target.value);
-            
-            const lines = incomingBuffer.split('\n');
-            if (lines.length > 1) {
-                const latestData = lines[lines.length - 2]; 
-                incomingBuffer = lines[lines.length - 1];   
-                parseAndDisplay(latestData);
-            }
+    function handleTelemetry(event) {
+        const decoder = new TextDecoder('utf-8');
+        const incomingData = decoder.decode(event.target.value);
+        
+        // DEBUG: Print exactly what we received to the new window
+        document.getElementById('debug-log').innerText = incomingData; 
+    
+        incomingBuffer += incomingData;
+        
+        const lines = incomingBuffer.split('\n');
+        if (lines.length > 1) {
+            const latestData = lines[lines.length - 2]; 
+            incomingBuffer = lines[lines.length - 1];   
+            parseAndDisplay(latestData);
+        }
+    }
         }
 
         function parseAndDisplay(dataStr) {
