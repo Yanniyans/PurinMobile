@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PurinMobile Controller</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #38bdf8; --danger: #ef4444; --success: #22c55e;}
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .dashboard { background: var(--card); padding: 25px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); width: 100%; max-width: 400px; margin-bottom: 20px;}
+        h2 { text-align: center; margin-top: 0; border-bottom: 2px solid #334155; padding-bottom: 10px;}
+        
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        #connectBtn { background: var(--accent); color: #000; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        #connectBtn:hover { opacity: 0.8; }
+        #status { font-size: 0.9em; color: #94a3b8; }
+
+        .stat-grid { display: grid; gap: 12px; }
+        .stat-row { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 12px 16px; border-radius: 8px; }
+        .label { color: #94a3b8; font-size: 0.9em; font-weight: 500; text-transform: uppercase;}
+        .value { font-size: 1.1em; font-weight: bold; color: var(--accent); }
+        .safe-normal { color: var(--success); }
+        .safe-alert { color: var(--danger); animation: pulse 1s infinite; }
+        
+        .sensor-group { display: flex; gap: 8px; font-size: 0.9em;}
+        .sensor-val { background: #334155; padding: 4px 8px; border-radius: 4px;}
+        .line-dot { width: 14px; height: 14px; border-radius: 50%; background: #334155; transition: background 0.1s; }
+        .line-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+        .dpad-container { display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; justify-content: center; margin-top: 20px;}
+        .btn { background: #334155; color: white; border: none; border-radius: 8px; height: 60px; font-size: 1.2em; font-weight: bold; cursor: pointer; user-select: none;}
+        .btn:active { background: var(--accent); color: black;}
+        .btn-up { grid-column: 2; }
+        .btn-left { grid-column: 1; }
+        .btn-stop { grid-column: 2; background: var(--danger); }
+        .btn-stop:active { background: #b91c1c; }
+        .btn-right { grid-column: 3; }
+        .btn-down { grid-column: 2; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="header-row">
+            <h2>PURIN STATUS</h2>
+            <button id="connectBtn">Connect Robot</button>
+        </div>
+        <div style="text-align: right; margin-bottom: 10px;"><span id="status">Disconnected</span></div>
+
+        <div class="stat-grid">
+            <div class="stat-row"><span class="label">Mode</span><span id="val-mode" class="value">--</span></div>
+            <div class="stat-row"><span class="label">Speed Limit</span><span id="val-speed" class="value">--</span></div>
+            <div class="stat-row"><span class="label">Safety</span><span id="val-safe" class="value">--</span></div>
+            <div class="stat-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                <span class="label">Wall IR (cm)</span>
+                <div class="sensor-group">
+                    <div class="sensor-val">L: <span id="val-dl">--</span></div>
+                    <div class="sensor-val">F: <span id="val-df">--</span></div>
+                    <div class="sensor-val">R: <span id="val-dr">--</span></div>
+                </div>
+            </div>
+            <div class="stat-row"><span class="label">Line Threshold</span><span id="val-lth" class="value">--</span></div>
+            <div class="stat-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                <span class="label">Line Array</span>
+                <div class="sensor-group" id="val-lin" style="gap: 12px; padding: 4px 0;">
+                    <div class="line-dot"></div><div class="line-dot"></div><div class="line-dot"></div><div class="line-dot"></div>
+                    <div class="line-dot"></div><div class="line-dot"></div><div class="line-dot"></div><div class="line-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dpad-container">
+            <button class="btn btn-up" onmousedown="sendCmd('W')" onmouseup="sendCmd('R')" ontouchstart="sendCmd('W')" ontouchend="sendCmd('R')">W</button>
+            <button class="btn btn-left" onmousedown="sendCmd('A')" onmouseup="sendCmd('R')" ontouchstart="sendCmd('A')" ontouchend="sendCmd('R')">A</button>
+            <button class="btn btn-stop" onclick="sendCmd('R')">STOP</button>
+            <button class="btn btn-right" onmousedown="sendCmd('D')" onmouseup="sendCmd('R')" ontouchstart="sendCmd('D')" ontouchend="sendCmd('R')">D</button>
+            <button class="btn btn-down" onmousedown="sendCmd('S')" onmouseup="sendCmd('R')" ontouchstart="sendCmd('S')" ontouchend="sendCmd('R')">S</button>
+        </div>
+        <div style="display:flex; justify-content: space-between; margin-top: 15px;">
+            <button class="btn" style="height: 40px; font-size: 1rem; width: 48%;" onclick="sendCmd('L')">Line Mode</button>
+            <button class="btn" style="height: 40px; font-size: 1rem; width: 48%;" onclick="sendCmd('M')">Wall Mode</button>
+        </div>
+    </div>
+
+    <script>
+        const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+        const RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; 
+        const TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; 
+
+        let bleDevice, rxCharacteristic, txCharacteristic;
+        const modes = ["Manual", "Line Follow", "Wall Follow"];
+        const statusEl = document.getElementById('status');
+
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            console.log("Connect button was clicked! Initializing Bluetooth..."); 
+            try {
+                statusEl.innerText = "Scanning...";
+                // Using acceptAllDevices to bypass name-filter issues
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: [SERVICE_UUID]
+                });
+
+                bleDevice.addEventListener('gattserverdisconnected', () => {
+                    statusEl.innerText = "Disconnected";
+                    statusEl.style.color = "#ef4444";
+                });
+
+                statusEl.innerText = "Connecting...";
+                const server = await bleDevice.gatt.connect();
+                const service = await server.getPrimaryService(SERVICE_UUID);
+                
+                rxCharacteristic = await service.getCharacteristic(RX_UUID);
+                txCharacteristic = await service.getCharacteristic(TX_UUID);
+
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleTelemetry);
+
+                statusEl.innerText = "Connected!";
+                statusEl.style.color = "#22c55e";
+            } catch (error) {
+                console.error("Connection error:", error);
+                statusEl.innerText = "Connection Failed";
+            }
+        });
+
+        async function sendCmd(cmdChar) {
+            if (!rxCharacteristic) return;
+            const encoder = new TextEncoder();
+            await rxCharacteristic.writeValue(encoder.encode(cmdChar));
+        }
+
+        let incomingBuffer = "";
+        function handleTelemetry(event) {
+            const decoder = new TextDecoder('utf-8');
+            incomingBuffer += decoder.decode(event.target.value);
+            
+            const lines = incomingBuffer.split('\n');
+            if (lines.length > 1) {
+                const latestData = lines[lines.length - 2]; 
+                incomingBuffer = lines[lines.length - 1];   
+                parseAndDisplay(latestData);
+            }
+        }
+
+        function parseAndDisplay(dataStr) {
+            const regex = /\[M:(\d+) SPD:(\d+) SAFE:(\d+)\] IR: L(\d+) F(\d+) R(\d+) \| LTH:(\d+) LIN
