@@ -5,21 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Purin Controller</title>
     <style>
-        body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; touch-action: manipulation; }
-        .dashboard { background: #1e293b; padding: 20px; border-radius: 12px; width: 100%; max-width: 350px; }
-        button { background: #38bdf8; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; color: #000; font-size: 16px;}
-        button:active { opacity: 0.7; }
+        /* The Purin Color Palette! */
+        body { background: #fff9b0; color: #4b2814; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; touch-action: manipulation; }
+        
+        .dashboard { background: #4b2814; padding: 20px; border-radius: 12px; width: 100%; max-width: 350px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        
+        button { background: #efd442; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; color: #4b2814; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; }
+        button:active { transform: scale(0.95); }
+        
+        .btn-connect { background: #eea33f; width: 100%; margin: 0 0 10px 0; color: #4b2814; }
+        .btn-stop { background: #eea33f; color: #4b2814; }
+        .btn-mode { background: #965f37; color: #fff9b0; flex: 1; }
+        
         .dpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 15px; text-align: center; }
-        .btn-stop { background: #ef4444; color: white; }
-        #modeDisplay { text-align: center; font-size: 20px; font-weight: bold; color: #f8fafc; margin: 15px 0; padding: 10px; background: #000; border-radius: 8px;}
-        .safe-mode { color: #ef4444 !important; animation: blink 1s infinite; }
+        
+        #modeDisplay { text-align: center; font-size: 20px; font-weight: bold; color: #4b2814; margin: 15px 0; padding: 10px; background: #fff9b0; border-radius: 8px;}
+        
+        /* Safe mode flashes Orange and Custard now */
+        .safe-mode { color: #4b2814 !important; background: #eea33f !important; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
+        
+        #btStatus { margin: 0 0 5px 0; font-size: 13px; text-align: center; color: #fff9b0; }
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <button id="connectBtn" style="width: 100%; margin: 0 0 10px 0;">Connect Robot</button>
-        <p id="btStatus" style="margin: 0 0 5px 0; font-size: 12px; text-align: center;">BLE: Disconnected</p>
+        <button id="connectBtn" class="btn-connect">Connect Robot</button>
+        <p id="btStatus">BLE: Disconnected</p>
         
         <div id="modeDisplay">Mode: Manual</div>
 
@@ -36,8 +48,8 @@
         </div>
 
         <div style="display: flex; justify-content: space-between; margin-top: 15px;">
-            <button onclick="sendCmd('L')" style="flex: 1;">Line Follow</button>
-            <button onclick="sendCmd('M')" style="flex: 1;">Wall Follow</button>
+            <button class="btn-mode" onclick="sendCmd('L')">Line Follow</button>
+            <button class="btn-mode" onclick="sendCmd('M')">Wall Follow</button>
         </div>
     </div>
 
@@ -54,7 +66,7 @@
                 const device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }] });
                 device.addEventListener('gattserverdisconnected', () => {
                     document.getElementById('btStatus').innerText = "BLE: Disconnected";
-                    document.getElementById('btStatus').style.color = "#ef4444";
+                    document.getElementById('btStatus').style.color = "#eea33f";
                 });
 
                 const server = await device.gatt.connect();
@@ -74,11 +86,18 @@
                 });
 
                 document.getElementById('btStatus').innerText = "BLE: Connected";
-                document.getElementById('btStatus').style.color = "#22c55e";
+                document.getElementById('btStatus').style.color = "#efd442";
             } catch (error) {
                 let realError = error.message || JSON.stringify(error) || "Unknown";
-                document.getElementById('btStatus').innerText = "Error: " + realError;
-                document.getElementById('btStatus').style.color = "#ef4444";
+                
+                // Catch that specific Error 2 and display a clean message
+                if (realError.includes("2") || realError === "Unknown") {
+                    document.getElementById('btStatus').innerText = "ESP Bluetooth Disconnected";
+                } else {
+                    document.getElementById('btStatus').innerText = "Error: " + realError;
+                }
+                
+                document.getElementById('btStatus').style.color = "#eea33f"; // Orange alert text
             }
         });
 
@@ -86,8 +105,7 @@
         async function sendCmd(cmdChar) {
             if (!rxCharacteristic) return;
             
-            // Update the screen instantly based on what we clicked
-            modeDisplay.classList.remove('safe-mode'); // Clear red flashing if we send a new command
+            modeDisplay.classList.remove('safe-mode'); 
             
             if (cmdChar === 'L') modeDisplay.innerText = "Mode: Line Follow";
             else if (cmdChar === 'M') modeDisplay.innerText = "Mode: Wall Follow";
